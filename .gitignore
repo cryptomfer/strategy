@@ -1,0 +1,32 @@
+# ---- Foundry build artifacts ----
+out/
+cache/
+broadcast/
+forge-artifacts/
+forge-cache/
+*.gas-snapshot
+
+# ---- Node / Yarn / NPM (if you later add a frontend) ----
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+
+# ---- OS-specific junk ----
+.DS_Store
+Thumbs.db
+*.tmp
+
+# ---- VS Code ----
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# ---- Coverage / testing ----
+coverage/
+lcov.info
+
+# ---- Misc ----
+*.tsbuildinfo

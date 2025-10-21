@@ -1,0 +1,24 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.26"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 10000
+
+remappings = [
+  "forge-std/=lib/forge-std/src/",
+  "solady/=lib/solady/src/",
+  "@uniswap/v4-core/=lib/v4-periphery/lib/v4-core/",
+  "@uniswap/v4-periphery/=lib/v4-periphery/",
+  "permit2/=lib/permit2/",
+  "@openzeppelin/=lib/v4-periphery/lib/v4-core/lib/openzeppelin-contracts/",
+  "ds-test/=lib/permit2/lib/forge-std/lib/ds-test/src/",
+  "erc4626-tests/=lib/v4-periphery/lib/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/",
+  "forge-gas-snapshot/=lib/permit2/lib/forge-gas-snapshot/src/",
+  "solmate/=lib/permit2/lib/solmate/",
+  "v4-core/=lib/v4-periphery/lib/v4-core/src/",
+  "v4-periphery/=lib/v4-periphery/"
+]
+
