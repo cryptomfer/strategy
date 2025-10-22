@@ -147,7 +147,6 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
     error NotERC721();
     error CannotLaunch();
     error InvalidIncrement();
-    error Unauthorized();
     error NotBaseChain();
     error Cc0TokenNotSet();
 
@@ -182,8 +181,18 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyLauncher() {
-        if (msg.sender != owner() && !launchers[msg.sender]) revert Unauthorized();
+        if (msg.sender != owner() && !launchers[msg.sender]) revert Ownable.Unauthorized();
         _;
+    }
+
+    /// @notice Explicit override to resolve owner() collision between Ownable and ICC0StrategyFactory
+    function owner()
+        public
+        view
+        override(Ownable, ICC0StrategyFactory)
+        returns (address)
+    {
+        return Ownable.owner();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -272,13 +281,16 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
         uint256 amount1Max,
         address recipient,
         bytes memory hookData
-    ) internal pure returns (bytes memory, bytes[] memory) {
-        bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
-        bytes;
+    )
+        internal
+        pure
+        returns (bytes memory actions, bytes[] memory params)
+    {
+        actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
+        params = new bytes[](2);
         params[0] =
             abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, recipient, hookData);
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
-        return (actions, params);
     }
 
     function _loadLiquidity(address _token) internal {
@@ -300,7 +312,13 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
         int24 tickLower = TickMath.minUsableTick(tickSpacing);
         int24 tickUpper = int24(175020);
 
-        PoolKey memory key = PoolKey(currency0, currency1, lpFee, tickSpacing, IHooks(hookAddress));
+        PoolKey memory poolKey = PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: lpFee,
+            tickSpacing: tickSpacing,
+            hooks: IHooks(hookAddress)
+        });
         bytes memory hookData = new bytes(0);
 
         // Hard-coded liquidity matching reference
@@ -309,16 +327,29 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
         uint256 amount0Max = token0Amount + 1;
         uint256 amount1Max = token1Amount + 1;
 
-        (bytes memory actions, bytes[] memory mintParams) =
-            _mintLiquidityParams(key, tickLower, tickUpper, liquidity, amount0Max, amount1Max, DEAD_ADDRESS, hookData);
-
-        bytes;
-        params[0] = abi.encodeWithSelector(IPositionManager.initializePool.selector, key, startingPrice, hookData);
-        params[1] = abi.encodeWithSelector(IPositionManager.modifyLiquidities.selector, abi.encode(actions, mintParams), block.timestamp + 60);
-
-        uint256 valueToPass = amount0Max;
+        // Approve token1 (ERC20) to PositionManager for liquidity add
         permit2.approve(_token, address(posm), type(uint160).max, type(uint48).max);
-        posm.multicall{value: valueToPass}(params);
+
+        // Initialize the pool directly on the position manager (payable)
+        uint256 valueToPass = amount0Max;
+        int24 tick = posm.initializePool{value: valueToPass}(poolKey, startingPrice);
+        require(tick != type(int24).max, "Pool init failed or already exists");
+
+        // Build mint-only modifyLiquidities batch
+        bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION));
+        bytes[] memory params = new bytes[](1);
+        params[0] = abi.encode(
+            poolKey,
+            tickLower,
+            tickUpper,
+            liquidity,
+            uint128(amount0Max),
+            uint128(amount1Max),
+            DEAD_ADDRESS,
+            hookData
+        );
+
+        posm.modifyLiquidities{value: valueToPass}(abi.encode(actions, params), block.timestamp + 60);
 
         loadingLiquidity = false;
     }
@@ -329,13 +360,13 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
 
     function _buyAndBurnCC0(uint256 amountIn) internal {
         // PoolKey(ETH, CC0 token, 0 fee, spacing 60, hookAddress)
-        PoolKey memory key = PoolKey(
-            Currency.wrap(address(0)),
-            Currency.wrap(cc0CompanyToken),
-            0,
-            60,
-            IHooks(hookAddress)
-        );
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(address(0)),
+            currency1: Currency.wrap(cc0CompanyToken),
+            fee: 0,
+            tickSpacing: 60,
+            hooks: IHooks(hookAddress)
+        });
 
         router.swapExactTokensForTokens{value: amountIn}(
             amountIn,
@@ -487,18 +518,8 @@ contract CC0StrategyFactory is Ownable, ReentrancyGuard, ICC0StrategyFactory {
         return address(strat);
     }
 
-    /*//////////////////////////////////////////////////////////////
-                                  VIEWS
-    //////////////////////////////////////////////////////////////*/
-
-    function cc0StrategyToCollection(address strategy) external view returns (address) {
-        return cc0StrategyToCollection[strategy];
-    }
-
-    function collectionToCC0Strategy(address collection) external view returns (address) {
-        return collectionToCC0Strategy[collection];
-    }
-
     /// @notice Allows the contract to receive ETH (used by TWAP logic)
     receive() external payable {}
 }
+
+

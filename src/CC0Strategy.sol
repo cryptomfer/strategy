@@ -358,13 +358,13 @@ contract CC0Strategy is Initializable, UUPSUpgradeable, Ownable, ReentrancyGuard
      * @dev Swaps ETH -> this token on the v4 pool and sends tokens to DEAD_ADDRESS.
      */
     function _buyAndBurnTokens(uint256 amountIn) internal {
-        PoolKey memory key = PoolKey(
-            Currency.wrap(address(0)),
-            Currency.wrap(address(this)),
-            0,
-            60,
-            IHooks(hookAddress)
-        );
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(address(0)),
+            currency1: Currency.wrap(address(this)),
+            fee: 0,
+            tickSpacing: 60,
+            hooks: IHooks(hookAddress)
+        });
 
         router().swapExactTokensForTokens{value: amountIn}(
             amountIn,
@@ -418,18 +418,21 @@ contract CC0Strategy is Initializable, UUPSUpgradeable, Ownable, ReentrancyGuard
     /// @notice Factory address stored in immutable args (bytes 0..20)
     function factory() public view returns (address) {
         bytes memory args = LibClone.argsOnERC1967(address(this), 0, 20);
+        // casting to bytes20 is safe because args packs the factory address in the low 20 bytes
         return address(bytes20(args));
     }
 
     /// @notice Router stored in immutable args (bytes 20..40)
     function router() public view returns (IUniswapV4Router04) {
         bytes memory args = LibClone.argsOnERC1967(address(this), 20, 40);
+        // casting to bytes20 is safe because args packs the router address in the low 20 bytes
         return IUniswapV4Router04(payable(address(bytes20(args))));
     }
 
     /// @notice PoolManager stored in immutable args (bytes 40..60)
     function poolManager() public view returns (IPoolManager) {
         bytes memory args = LibClone.argsOnERC1967(address(this), 40, 60);
+        // casting to bytes20 is safe because args packs the poolManager address in the low 20 bytes
         return IPoolManager(address(bytes20(args)));
     }
 

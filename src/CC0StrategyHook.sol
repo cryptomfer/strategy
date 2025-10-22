@@ -16,7 +16,7 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
 import {ModifyLiquidityParams, SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+// Removed unused BeforeSwapDelta import
 
 /* ============================== Local =============================== */
 import {ICC0Strategy, ICC0StrategyFactory, IERC721} from "./Interfaces.sol";
@@ -198,7 +198,7 @@ contract CC0StrategyHook is BaseHook, ReentrancyGuard {
         if (deployedAt == 0) return DEFAULT_FEE;
 
         uint256 blocksPassed = block.number - deployedAt;
-        uint256 feeReductions = (blocksPassed / 5) * 100; // reduce 1% every 5 blocks
+        uint256 feeReductions = (blocksPassed * 100) / 5; // reduce 1% every 5 blocks
 
         uint256 maxReducible = STARTING_BUY_FEE - DEFAULT_FEE;
         if (feeReductions >= maxReducible) return DEFAULT_FEE;
