@@ -8,6 +8,12 @@ optimizer = true
 optimizer_runs = 10000
 via_ir = true
 
+[profile.default.env]
+RPC_URL_ETHEREUM = "${RPC_URL_ETHEREUM}"
+RPC_URL_BASE     = "${RPC_URL_BASE}"
+FORK_BLOCK_ETHEREUM = "${FORK_BLOCK_ETHEREUM}"
+FORK_BLOCK_BASE     = "${FORK_BLOCK_BASE}"
+
 remappings = [
   "forge-std/=lib/forge-std/src/",
   "solady/=lib/solady/src/",
