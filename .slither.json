@@ -1,14 +1,13 @@
 {
-  "filter_paths": "test|script|lib",
-  "exclude": [
-    "solc-version",
-    "naming-convention"
+  "detectors_to_exclude": [
+    "solc-version", "naming-convention"
   ],
-  "remappings": [
-    "forge-std/=lib/forge-std/src/",
-    "solady/=lib/solady/src/",
-    "@uniswap/v4-core/=lib/v4-periphery/lib/v4-core/",
-    "@uniswap/v4-periphery/=lib/v4-periphery/",
-    "permit2/=lib/permit2/"
+  "solc_remaps": [
+    "forge-std=lib/forge-std/src",
+    "solady=lib/solady/src",
+    "@uniswap/v4-core=lib/v4-periphery/lib/v4-core",
+    "@uniswap/v4-periphery=lib/v4-periphery",
+    "permit2=lib/permit2/src"
   ]
 }
+
